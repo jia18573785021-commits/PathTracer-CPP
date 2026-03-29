@@ -136,6 +136,7 @@
     <ClInclude Include="Hittable.h" />
     <ClInclude Include="Hittable_List.h" />
     <ClInclude Include="Interval.h" />
+    <ClInclude Include="Material.h" />
     <ClInclude Include="My_Common.h" />
     <ClInclude Include="Ray.h" />
     <ClInclude Include="Sphere.h" />

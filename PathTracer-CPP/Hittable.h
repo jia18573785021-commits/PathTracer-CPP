@@ -1,5 +1,7 @@
 #pragma once
 
+class Material;
+
 class HitRecord
 {
 public :
@@ -7,6 +9,7 @@ public :
 	Vector3 n;
 	double t;
 	bool front_face;
+	std::shared_ptr<Material> mat;
 
 	// outward_normal is normalized
 	void set_face_front(const Ray& ray, const Vector3& outward_normal)

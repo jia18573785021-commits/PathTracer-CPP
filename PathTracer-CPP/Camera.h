@@ -2,6 +2,7 @@
 #include <fstream>
 #include "Hittable.h"
 #include "My_Common.h"
+#include "Material.h"
 
 class Camera
 {
@@ -11,6 +12,14 @@ public :
 	int    image_width      = 400;
 	int    sample_per_pixel = 100;
 	int    max_depth        = 10;
+
+	double vfov = 90;
+	Vector3 lookfrom = Point3(0, 0, 0);
+	Vector3 lookat = Point3(0, 0, -1);
+	Vector3 up = Vector3(0, 1, 0);
+
+	double defocus_angle = 0;  // Variation angle of rays through each pixel
+	double focus_dist = 10;    // Distance from camera lookfrom point to plane of perfect focus
 
 	void Render(const Hittable& world)
 	{
@@ -51,6 +60,10 @@ private :
 	Point3  pixel00_center;     // Location of pixel 0, 0
 	Vector3 pixel_delta_u;      // Offset to pixel to the right
 	Vector3 pixel_delta_v;      // Offset to pixel below
+	Vector3 u, v, w;
+
+	Vector3   defocus_disk_u;   // Defocus disk horizontal radius
+	Vector3   defocus_disk_v;   // Defocus disk vertical radius
 
 	void initialize()
 	{
@@ -58,25 +71,35 @@ private :
 		// Ensure the height always greater than 1
 		image_height = (image_height < 1) ? 1 : image_height;
 
-		camera_center = Point3(0, 0, 0);
+		camera_center = lookfrom;
 
 		// Camera
-		auto focal_length = 1.0;
-		auto viewport_height = 2.0;
+		double theta = degrees_to_radians(vfov);
+		double h = std::tan(theta / 2);
+		auto viewport_height = 2 * h * focus_dist;
 		auto viewport_width = viewport_height * (double(image_width) / image_height);
 		pixel_sample_scale = 1.0 / sample_per_pixel;
 
+		w = normalize(lookfrom - lookat);
+		u = normalize(cross(up, w));
+		v = cross(w, u);
+
 		// Calculate the edge of viewport
-		auto viewport_u = Vector3(viewport_width, 0, 0);
-		auto viewport_v = Vector3(0, -viewport_height, 0);
+		auto viewport_u = viewport_width * u;
+		auto viewport_v = viewport_height * -v;
 
 		// Calculate the distance form the current pixel to the next pixel
 		pixel_delta_u = viewport_u / image_width;
 		pixel_delta_v = viewport_v / image_height;
 
 		// Calculate the location of the upper left pixel
-		auto viewport_upper_left = camera_center - Vector3(0, 0, focal_length) - viewport_u / 2 - viewport_v / 2;
+		auto viewport_upper_left = camera_center - (focus_dist * w) - viewport_u / 2 - viewport_v / 2;		
 		pixel00_center = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
+
+		// Calculate the radius of the defocus disk, which is determined by the focus distance and the defocus angle
+		auto defocus_radius = focus_dist * std::tan(degrees_to_radians(defocus_angle / 2));
+		defocus_disk_u = u * defocus_radius;
+		defocus_disk_v = v * defocus_radius;
 	}
 
 	Vector3 sample_square() const
@@ -94,10 +117,17 @@ private :
 							((i + offset.x()) * pixel_delta_u) +
 							((j + offset.y()) * pixel_delta_v);
 
-		auto ray_origin = camera_center;
+		auto ray_origin = (defocus_angle < 0) ? camera_center : defocus_disk_sample();
 		auto ray_direction = pixel_sample - ray_origin;
 
 		return Ray(ray_origin, ray_direction);
+	}
+
+	Point3 defocus_disk_sample() const
+	{
+		// Returns a random point in the camera defocus disk.
+		auto p = random_in_unit_disk();
+		return camera_center + (p[0] * defocus_disk_u) + (p[1] * defocus_disk_v);
 	}
 
 	Color ray_color(const Ray& ray, const int depth, const Hittable& world)
@@ -110,9 +140,11 @@ private :
 		HitRecord rec;
 		if (world.Hit(ray, 0.001, infinity, rec))
 		{
-			//Vector3 direction = random_on_hemisphere(rec.n);
-			Vector3 direction = rec.n + random_unit_vector();
-			return 0.5 * ray_color(Ray(rec.p, direction), depth - 1, world);
+			Ray scattered;
+			Color attenuation;
+			if (rec.mat->Scatter(ray, rec, attenuation, scattered))
+				return attenuation * ray_color(scattered, depth - 1, world);
+			return Color(0, 0, 0);
 		}
 		Vector3 uint_direction = normalize(ray.direction());
 		// [-1, 1] -> [0, 1]

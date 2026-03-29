@@ -2,6 +2,9 @@
 #include<array>
 #include <cmath>
 
+double random_double();		
+double random_double(double min, double max);
+
 class Vector3
 {
 public:
@@ -47,6 +50,13 @@ public:
 	double length_squared() const
 	{
 		return e[0] * e[0] + e[1] * e[1] + e[2] * e[2];
+	}
+
+
+	bool near_zero() const
+	{
+		auto s = 1e-8;
+		return (std::fabs(e[0]) < s) && (std::fabs(e[1]) < s) && (std::fabs(e[2]) < s);
 	}
 };
 using Point3 = Vector3;
@@ -118,4 +128,14 @@ inline Vector3 operator/(const Vector3& u, double d)
 inline Vector3 normalize(const Vector3& u)
 {
 	return u / u.length();
+}
+
+inline Point3 random_in_unit_disk()
+{
+	while (true)
+	{
+		auto p = Vector3(random_double(-1, 1), random_double(-1, 1), 0);
+		if (p.length_squared() < 1)
+			return p;
+	}
 }
