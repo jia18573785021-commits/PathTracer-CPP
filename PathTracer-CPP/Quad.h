@@ -2,7 +2,6 @@
 #include<memory>
 #include "Hittable.h"
 
-
 class Quad : public Hittable
 {
 public :
