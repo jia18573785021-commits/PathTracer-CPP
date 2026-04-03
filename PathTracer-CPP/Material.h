@@ -9,7 +9,10 @@ public:
 	virtual ~Material() = default;
 
 	virtual bool Scatter(const Ray& ray_in, const HitRecord& rec, Color& attenuation, Ray& scattered) const { return false; }
+	virtual Color emitted(double u, double v, const Point3& p) const { return Color(0, 0, 0); }
 };
+
+
 
 class Lambertian : public Material
 {
@@ -31,6 +34,8 @@ private :
 	std::shared_ptr<Texture> tex;
 };
 
+
+
 class Metal : public Material
 {
 public :
@@ -49,6 +54,8 @@ private :
 	Color albedo;
 	double fuzz;
 };
+
+
 
 class Dielectric : public Material
 {
@@ -86,4 +93,21 @@ public :
 
 private :
 	double refraction_index;
+};
+
+
+
+class Diffuse_Light : public Material
+{
+public :
+	Diffuse_Light(std::shared_ptr<Texture> tex) : tex(tex) {}
+	Diffuse_Light(const Color& emit) : tex(std::make_shared<Solid_Color>(emit)) {}
+
+	Color emitted(double u, double v, const Point3& p) const override
+	{
+		return tex->value(u, v, p);
+	}
+
+private :
+	std::shared_ptr<Texture> tex;
 };

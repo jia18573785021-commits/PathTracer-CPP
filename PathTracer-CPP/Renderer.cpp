@@ -14,21 +14,20 @@ void Checker_Spheres();
 void Earth();
 void Perlin_Spheres();
 void Quads();
+void Lights_Test();
+void Cornell_Box();
 
 int main()
 {
-	switch (4)
+	switch (7)
 	{
-	case 1:
-		Bouncing_Spheres(); break;
-	case 2:
-		Checker_Spheres();  break;
-	case 3:
-		Earth(); break;
-	case 4:
-		Perlin_Spheres(); break;
-	case 5:
-		Quads(); break;	
+		case 1: Bouncing_Spheres(); break;
+		case 2: Checker_Spheres();  break;
+		case 3: Earth();            break;
+		case 4: Perlin_Spheres();   break;
+		case 5: Quads();            break;	
+		case 6: Lights_Test();      break;
+		case 7: Cornell_Box();      break;
 	}
 }
 
@@ -103,6 +102,8 @@ void Bouncing_Spheres()
 	cam.defocus_angle = 0.6;
 	cam.focus_dist = 10;
 
+	cam.background = Color(0.70, 0.80, 1.00);
+
 	std::clog << "Start rendering...\n";
 	{
 		// Timing
@@ -133,6 +134,8 @@ void Checker_Spheres()
 
 	cam.defocus_angle = 0;
 
+	cam.background = Color(0.70, 0.80, 1.00);
+
 	std::clog << "Start rendering...\n";
 	{
 		// Timing
@@ -162,6 +165,8 @@ void Earth()
 
 	cam.defocus_angle = 0;
 
+	cam.background = Color(0.70, 0.80, 1.00);
+
 	cam.Render(Hittable_List(globe));
 }
 
@@ -186,6 +191,8 @@ void Perlin_Spheres()
 	cam.up = Vector3(0, 1, 0);
 
 	cam.defocus_angle = 0;
+
+	cam.background = Color(0.70, 0.80, 1.00);
 
 	std::clog << "Start rendering...\n";
 	{
@@ -222,6 +229,92 @@ void Quads()
 	cam.vfov = 80;
 	cam.lookfrom = Point3(0, 0, 9);
 	cam.lookat = Point3(0, 0, 0);
+	cam.up = Vector3(0, 1, 0);
+
+	cam.defocus_angle = 0;
+
+	cam.background = Color(0.70, 0.80, 1.00);
+
+	std::clog << "Start rendering...\n";
+	{
+		// Timing
+		Timer timer;
+		// Rendering
+		cam.Render(world);
+	}
+}
+
+void Lights_Test()
+{
+	Hittable_List world;
+
+	auto noiseTex = make_shared<Noise_Texture>(4);
+	world.add(make_shared<Sphere>(Point3(0, -1000, 0), 1000, make_shared<Lambertian>(noiseTex)));
+	world.add(make_shared<Sphere>(Point3(0, 2, 0), 2, make_shared<Lambertian>(noiseTex)));
+
+	auto light = make_shared<Diffuse_Light>(Color(4, 4, 4));
+	world.add(make_shared<Quad>(Point3(3, 1, -2), Vector3(2, 0, 0), Vector3(0, 2, 0), light));
+	auto red_light = make_shared<Diffuse_Light>(Color(4, 0.2, 0.2));
+	world.add(make_shared<Sphere>(Point3(0, 7.2, 0), 2, red_light));
+
+	Camera cam;
+
+	cam.aspect_ratio = 16.0 / 9.0;
+	cam.image_width = 400;
+	cam.sample_per_pixel = 100;
+	cam.max_depth = 50;
+	cam.background = Color(0, 0, 0);
+
+	cam.vfov = 20;
+	cam.lookfrom = Point3(26, 3, 6);
+	cam.lookat = Point3(0, 2, 0);
+	cam.up = Vector3(0, 1, 0);
+
+	cam.defocus_angle = 0;
+
+	std::clog << "Start rendering...\n";
+	{
+		// Timing
+		Timer timer;
+		// Rendering
+		cam.Render(world);
+	}
+}
+
+void Cornell_Box()
+{
+	Hittable_List world;
+
+	// Materials
+	auto red = make_shared<Lambertian>(Color(.65, .05, .05));
+	auto white = make_shared<Lambertian>(Color(.73, .73, .73));
+	auto green = make_shared<Lambertian>(Color(.12, .45, .15));
+	auto light = make_shared<Diffuse_Light>(Color(15, 15, 15));
+
+	// Objects
+	world.add(make_shared<Quad>(Point3(555,   0,   0),   Vector3(   0, 555, 0),  Vector3(0,   0,  555), green));
+	world.add(make_shared<Quad>(Point3(  0,   0,   0),   Vector3(   0, 555, 0),  Vector3(0,   0,  555),   red));
+	world.add(make_shared<Quad>(Point3(343, 554, 332),   Vector3(-130,   0, 0),  Vector3(0,   0, -105), light));
+	world.add(make_shared<Quad>(Point3(  0,   0,   0),   Vector3( 555,   0, 0),  Vector3(0,   0,  555), white));
+	world.add(make_shared<Quad>(Point3(555, 555, 555),   Vector3(-555,   0, 0),  Vector3(0,   0, -555), white));
+	world.add(make_shared<Quad>(Point3(  0,   0, 555),   Vector3( 555,   0, 0),  Vector3(0, 555,    0), white));
+
+
+	world.add(Box(Point3(130, 0, 65), Point3(295, 165, 230), white));
+	world.add(Box(Point3(265, 0, 295), Point3(430, 330, 460), white));
+
+	// Camera
+	Camera cam;
+
+	cam.aspect_ratio = 1.0;
+	cam.image_width = 600;
+	cam.sample_per_pixel = 200;
+	cam.max_depth = 50;
+	cam.background = Color(0, 0, 0);
+
+	cam.vfov = 40;
+	cam.lookfrom = Point3(278, 278, -800);
+	cam.lookat = Point3(278, 278, 0);
 	cam.up = Vector3(0, 1, 0);
 
 	cam.defocus_angle = 0;
